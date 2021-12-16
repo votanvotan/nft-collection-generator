@@ -1,6 +1,6 @@
 # NFT Collection
 
-A ...
+A random NFT generator...
 
 ## Getting Started
 
