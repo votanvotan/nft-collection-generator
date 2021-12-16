@@ -1,33 +1,18 @@
 const main = async () => {
-  const waveContractFactory = await hre.ethers.getContractFactory("WavePortal");
-  const waveContract = await waveContractFactory.deploy({
-    value: hre.ethers.utils.parseEther("0.1"),
-  });
-  await waveContract.deployed();
-  console.log("Contract addy:", waveContract.address);
+  const nftContractFactory = await hre.ethers.getContractFactory("MyEpicNFT");
+  const nftContract = await nftContractFactory.deploy();
+  await nftContract.deployed();
+  console.log("Contract deployed to:", nftContract.address);
 
-  let contractBalance = await hre.ethers.provider.getBalance(
-    waveContract.address
-  );
-  console.log(
-    "Contract balance:",
-    hre.ethers.utils.formatEther(contractBalance)
-  );
+  // Call the function.
+  let txn = await nftContract.makeAnEpicNFT();
+  // Wait for it to be mined.
+  await txn.wait();
 
-  let waveTxn = await waveContract.wave("This is wave #1");
-  await waveTxn.wait();
-
-  let waveTxn = await waveContract.wave("This is wave #2");
-  await waveTxn.wait();
-
-  contractBalance = await hre.ethers.provider.getBalance(waveContract.addresss);
-  console.log(
-    "Contract balance:",
-    hre.ethers.utils.formatEther(contractBalance)
-  );
-
-  let allWaves = await waveContract.getAllWaves();
-  console.log(allWaves);
+  // Mint another NFT for fun.
+  txn = await nftContract.makeAnEpicNFT();
+  // Wait for it to be mined.
+  await txn.wait();
 };
 
 const runMain = async () => {

@@ -1,13 +1,19 @@
 const main = async () => {
-  const waveContractFactory = await hre.ethers.getContractFactory("WavePortal");
-  const waveContract = await waveContractFactory.deploy();
-  // const waveContract = await waveContractFactory.deploy({
-  //   value: hre.ethers.utils.parseEther("0.001"),
-  // });
+  const nftContractFactory = await hre.ethers.getContractFactory("MyEpicNFT");
+  const nftContract = await nftContractFactory.deploy();
+  await nftContract.deployed();
+  console.log("Contract deployed to:", nftContract.address);
 
-  await waveContract.deployed();
+  // Call the function.
+  let txn = await nftContract.makeAnEpicNFT();
+  // Wait for it to be mined.
+  await txn.wait();
+  console.log("Minted NFT #1");
 
-  console.log("WavePortal address: ", waveContract.address);
+  txn = await nftContract.makeAnEpicNFT();
+  // Wait for it to be mined.
+  await txn.wait();
+  console.log("Minted NFT #2");
 };
 
 const runMain = async () => {
@@ -15,7 +21,7 @@ const runMain = async () => {
     await main();
     process.exit(0);
   } catch (error) {
-    console.error(error);
+    console.log(error);
     process.exit(1);
   }
 };

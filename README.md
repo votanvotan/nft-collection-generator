@@ -1,6 +1,6 @@
-# MessageMe
+# NFT Collection
 
-A simple Ethereum-Blockchain based messaging system
+A ...
 
 ## Getting Started
 

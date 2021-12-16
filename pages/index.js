@@ -2,79 +2,34 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import { ethers } from "ethers";
 
-import abi from "../artifacts/contracts/WavePortal.sol/WavePortal.json";
+import abi from "../artifacts/contracts/MyEpicNFT.sol/MyEpicNFT.json";
 import styles from "../styles/Home.module.css";
 
 export default function Home() {
-  const [message, setMessage] = useState("");
   const [currentAccount, setCurrentAccount] = useState("");
-  const [allWaves, setAllWaves] = useState([]);
-  const contractAddress = process.env.CONTRACT_ADDRESS;
-
-  const getAllWaves = async () => {
-    try {
-      if (window.ethereum) {
-        const provider = new ethers.providers.JsonRpcProvider();
-        const wavePortalContract = new ethers.Contract(
-          contractAddress,
-          abi.abi,
-          provider
-        );
-
-        const waves = await wavePortalContract.getAllWaves();
-        let wavesCleaned = [];
-        waves.forEach((wave) => {
-          wavesCleaned.push({
-            address: wave.waver,
-            timestamp: new Date(wave.timestamp * 1000),
-            message: wave.message,
-          });
-        });
-
-        setAllWaves(wavesCleaned);
-
-        // wavePortalContract.on("NewWave", (from, timestamp, message) => {
-        //   console.log("NewWave", from, timestamp, message);
-
-        //   setAllWaves((prevState) => [
-        //     ...prevState,
-        //     {
-        //       address: from,
-        //       timestamp: new Date(timestamp * 1000),
-        //       message: message,
-        //     },
-        //   ]);
-        // });
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+  // "https://testnets.opensea.io/assets/INSERT_CONTRACT_ADDRESS_HERE/INSERT_TOKEN_ID_HERE"
+  // "https://rinkeby.rarible.com/token/INSERT_CONTRACT_ADDRESS_HERE:INSERT_TOKEN_ID_HERE"
 
   const checkIfWalletIsConnected = async () => {
-    try {
-      const { ethereum } = window;
+    const { ethereum } = window;
 
-      if (!ethereum) {
-        console.log("Make sure you have metamask!");
-        return;
-      } else {
-        console.log("We have the ethereum object", ethereum);
-      }
+    if (!ethereum) {
+      console.log("Make sure you have metamask!");
+      return;
+    } else {
+      console.log("We have the ethereum object", ethereum);
+    }
 
-      const accounts = await ethereum.request({ method: "eth_accounts" });
+    const accounts = await ethereum.request({ method: "eth_accounts" });
 
-      if (accounts.length !== 0) {
-        const account = accounts[0];
-        setCurrentAccount(accounts[0]);
-        console.log("Found an authorized account:", account);
-      } else {
-        console.log("No authorized account found");
-      }
-    } catch (error) {
-      console.log(error);
+    if (accounts.length !== 0) {
+      const account = accounts[0];
+      console.log("Found an authorized account:", account);
+      setCurrentAccount(account);
+      setupEventListener();
+    } else {
+      console.log("No authorized account found");
     }
   };
 
@@ -93,36 +48,63 @@ export default function Home() {
 
       console.log("Connected", accounts[0]);
       setCurrentAccount(accounts[0]);
+      setupEventListener();
     } catch (error) {
       console.log(error);
     }
   };
 
-  const wave = async () => {
+  const setupEventListener = async () => {
     try {
       const { ethereum } = window;
 
       if (ethereum) {
         const provider = new ethers.providers.Web3Provider(ethereum);
         const signer = provider.getSigner();
-        const wavePortalContract = new ethers.Contract(
+        const connectedContract = new ethers.Contract(
           contractAddress,
           abi.abi,
           signer
         );
 
-        let count = await wavePortalContract.getTotalWaves();
-        console.log("Retrieved total wave count...", count.toNumber());
+        connectedContract.on("NewEpicNFTMinted", (from, tokenId) => {
+          console.log(from, tokenId.toNumber());
+          alert(
+            `Hey there! We've minted your NFT and sent it to your wallet. It may be blank right now. It can take a max of 10 min to show up on OpenSea. Here's the link: https://testnets.opensea.io/assets/${contractAddress}/${tokenId.toNumber()}`
+          );
+        });
 
-        const waveTxn = await wavePortalContract.wave(message);
-        console.log("Mining...", waveTxn.hash);
+        console.log("Setup event listener!");
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
-        await waveTxn.wait();
-        console.log("Mined -- ", waveTxn.hash);
+  const askContractToMintNft = async () => {
+    try {
+      const { ethereum } = window;
 
-        count = await wavePortalContract.getTotalWaves();
-        console.log("Retrieved total wave count...", count.toNumber());
-        getAllWaves();
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const signer = provider.getSigner();
+        const connectedContract = new ethers.Contract(
+          contractAddress,
+          abi.abi,
+          signer
+        );
+
+        console.log("Going to pop wallet now to pay gas...");
+        let nftTxn = await connectedContract.makeAnEpicNFT();
+
+        console.log("Mining...please wait.");
+        await nftTxn.wait();
+
+        console.log(
+          `Mined, see transaction: https://rinkeby.etherscan.io/tx/${nftTxn.hash}`
+        );
       } else {
         console.log("Ethereum object doesn't exist!");
       }
@@ -133,25 +115,17 @@ export default function Home() {
 
   useEffect(() => {
     checkIfWalletIsConnected();
-    getAllWaves();
   }, []);
 
   return (
     <div className={styles.container}>
       <Head>
-        <title>Waveportal</title>
+        <title>My NFT Collection</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <h3>👋 Hey there!</h3>
-
-      <textarea
-        value={message}
-        onChange={(event) => setMessage(event.target.value)}
-        placeholder="Leave a message..."
-        rows="5"
-        cols="33"
-      />
+      <h3>My NFT Collection</h3>
+      <p>Each unique. Each beautiful. Discover your NFT today.</p>
 
       <br />
 
@@ -160,27 +134,8 @@ export default function Home() {
           Connect Wallet
         </button>
       ) : (
-        <button disabled={!message} onClick={() => wave()}>
-          Leave a message!
-        </button>
+        <button onClick={askContractToMintNft}>Mint NFT</button>
       )}
-
-      {allWaves.map((wave, index) => {
-        return (
-          <div
-            key={wave.timestamp + index}
-            style={{
-              backgroundColor: "OldLace",
-              marginTop: "16px",
-              padding: "8px",
-            }}
-          >
-            <div>Address: {wave.address}</div>
-            <div>Time: {wave.timestamp.toString()}</div>
-            <div>Message: {wave.message}</div>
-          </div>
-        );
-      })}
     </div>
   );
 }
